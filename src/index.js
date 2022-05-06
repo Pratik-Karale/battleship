@@ -1,6 +1,6 @@
+import {Board} from "./gameBoard"
 import {Ship} from "./ship"
-import {board} from "./gameBoard"
 
 
 
-export {Ship}
+export {Board,Ship}

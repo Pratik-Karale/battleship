@@ -11,8 +11,9 @@ export function Board(size=5){
             if(!(ship.length+y<size)) throw new Error("ship cant be place outside the board");
             for(let i=0;i<=ship.length;i++){
                 board[x][y]=ship
-                x++
+                y++
             }
         }
     }
+    return {place}
 }
