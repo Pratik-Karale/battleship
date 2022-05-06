@@ -1,5 +1,5 @@
 const Ship=(length,startPos,horizontal=false)=>{
-    const damagedParts=Array(length).fill(0)
+    const damagedParts=Array(length)
     const hit=(partNum)=>{
         damagedParts[partNum]=1
     }
