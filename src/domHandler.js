@@ -6,7 +6,7 @@ const utils = {
     }
 }
 // hits:[],misses:[],shipPart:[]
-function BoardElem(state) {
+function BoardElem(state, hideShips = false, size = 10) {
     let boardElem = utils.textToHtml(`
         <div class="board"></div>
     `)
@@ -17,17 +17,21 @@ function BoardElem(state) {
             `))
         }
     }
-    state.shipParts.forEach(coords => {
-        boardElem.querySelector(`[data-coords="${coords[0]},${coords[1]}"]`)
-            .classList.add("ship-part")
-    });
-
-    const update = () => {
+    if (!hideShips) {
         state.shipParts.forEach(coords => {
             boardElem.querySelector(`[data-coords="${coords[0]},${coords[1]}"]`)
                 .classList.add("ship-part")
         });
+    }
 
+    const update = () => {
+        if (!hideShips) {
+
+            state.shipParts.forEach(coords => {
+                boardElem.querySelector(`[data-coords="${coords[0]},${coords[1]}"]`)
+                    .classList.add("ship-part")
+            });
+        }
         state.hits.forEach(coords => {
             boardElem.querySelector(`[data-coords="${coords[0]},${coords[1]}"]`)
                 .classList.add("attacked-ship-part")
@@ -37,8 +41,8 @@ function BoardElem(state) {
                 .classList.add("attacked-water")
         });
     }
-    boardElem.update=update
-    boardElem.tileElems=[...boardElem.children]
+    boardElem.update = update
+    boardElem.tileElems = [...boardElem.children]
     return boardElem
 }
-export {BoardElem}
+export { BoardElem }
