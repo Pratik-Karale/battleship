@@ -29,5 +29,5 @@ export function Board(size=5){
     }
     const isAllSunk=()=>ships.every((ship)=>ship.isSunk())
     const getTile=(x,y)=>board[y][x]
-    return {place,getTile,recieveAttack,size:board.length}
+    return {place,getTile,recieveAttack,size:board.length,isAllSunk}
 }
