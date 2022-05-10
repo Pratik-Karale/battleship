@@ -3,7 +3,7 @@ export function Board(size=5){
     const ships=[]
     const state={hits:[],misses:[],shipParts:[]}
     const place=(ship,horizontal,x,y)=>{
-        if(ship.length+x>=size || ship.length+y>=size){
+        if((ship.length+x>size && horizontal) || (ship.length+y>size && !horizontal)){
             throw new Error("ship cant be place outside the board")
         };
         if(horizontal){
@@ -34,5 +34,6 @@ export function Board(size=5){
     }
     const isAllSunk=()=>ships.every((ship)=>ship.isSunk())
     const getTile=(x,y)=>board[y][x]
-    return {place,getTile,recieveAttack,size:board.length,isAllSunk,state}
+    const isTileEmpty=(x,y)=>board[y][x]==0 || board[y][x].isHit==false
+    return {place,getTile,recieveAttack,size:board.length,isAllSunk,state,isTileEmpty}
 }
