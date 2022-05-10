@@ -1,0 +1,43 @@
+*{
+    --board-size:350px;
+}
+
+
+body{
+    margin:0;
+    height: 100vh;
+    overflow-y: hidden;
+    padding: 2rem;
+    display: grid;
+    place-items: center;
+    padding: 1rem 5rem;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(4,1fr);
+}
+.board{
+    display:grid;
+    width:var(--board-size);
+    height:var(--board-size);
+    /* gap:0.5rem; */
+    background-color: black;
+    grid-template-columns: repeat(10,10%);
+    grid-template-rows: repeat(10,10%);
+}
+.tile{
+    background-color: wheat;
+    outline: 1px solid black;
+}
+
+.tile.ship-part{
+    background-color: black;
+}
+.tile.attacked-ship-part{
+    background-color: red;
+}
+.tile.attacked-water{
+    background-color: blue;
+}
+
+.game-title{
+    grid-column: 1/-1;
+}
