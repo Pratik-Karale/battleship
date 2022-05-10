@@ -3,11 +3,21 @@ const HtmlWebpackPlugin=require("html-webpack-plugin")
 module.exports={
     entry:"./src/index.js",
     output:{
-        filename:"wubbalubaadubdub.js",
-        path:path.resolve(__dirname,"dist")
+        filename:"[contenthash].js",
+        path:path.resolve(__dirname,"dist"),
+        clean:true,
     },
-    // plugins:[new HtmlWebpackPlugin({
-    //     title:"rick and morty",
-    //     template:"./src/index.html"
-    // })]
+    mode:"development",
+    plugins:[new HtmlWebpackPlugin({
+        // title:"rick and morty",
+        template:"./src/index.html"
+    })],
+    module: {
+        rules: [
+          {
+            test: /\.css$/i,
+            use: ["style-loader", "css-loader"],
+          },
+        ],
+      },
 }
