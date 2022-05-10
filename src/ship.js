@@ -7,7 +7,7 @@ const ShipPart=()=>{
     }
 }
 
-const Ship=(length,horizontal=false)=>{
+const Ship=(length)=>{
     const daShip=Array(length).fill(0).map(()=>{
         return ShipPart()
     })
