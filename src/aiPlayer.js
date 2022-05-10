@@ -9,6 +9,7 @@ class AiPlayer extends Player{
         }while(this.enemy.board.getTile(...chosenTileCoords)==1 ||
                this.enemy.board.getTile(...chosenTileCoords).isHit==true)
         
-        this.enemy.recieveAttack(...chosenTileCoords)
+        this.enemy.board.recieveAttack(...chosenTileCoords)
     }
 }
+export {AiPlayer}
