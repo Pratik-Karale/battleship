@@ -1,7 +1,7 @@
 import {Board} from "./gameBoard"
 import {Ship} from "./ship"
 import {Player} from "./player"
-
+import {AiPlayer} from "./aiPlayer"
 it("test ship IO",()=>{
     const myShip=Ship(3)
     expect(myShip.length).toBe(3)
@@ -69,4 +69,22 @@ it("allow player to hit enemy waters/ships(also sink 'em) and vice versa",()=>{
     comp.enemy.board.recieveAttack(0,0)
     comp.enemy.board.recieveAttack(0,1)
     expect(comp.enemy.board.isAllSunk()).toBe(true)
+})
+
+it("check aiPlayer hits",()=>{
+    const myBoard=Board(3)
+    myBoard.place(Ship(2),false,0,0)
+    const player=new Player(myBoard)
+    
+    const aiBoard=Board(3)
+    aiBoard.place(Ship(2),true,0,0)
+    const myAiPlayer=new AiPlayer(aiBoard)
+
+    player.enemy=myAiPlayer
+    myAiPlayer.enemy=player
+
+    myAiPlayer.enemy.board.recieveAttack(0,0)
+    myAiPlayer.enemy.board.recieveAttack(0,1)
+
+    expect(myAiPlayer.enemy.board.isAllSunk()).toBe(true)
 })
