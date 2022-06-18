@@ -14,8 +14,7 @@ const Ship=(length)=>{
     const isSunk=()=>{
         return daShip.every((part)=>part.isHit)
     }
-    daShip.hit=hit
     daShip.isSunk=isSunk
-    return     daShip
+    return daShip
 };
 export {Ship}
