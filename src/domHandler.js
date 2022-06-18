@@ -6,10 +6,19 @@ const utils = {
     }
 }
 // hits:[],misses:[],shipPart:[]
-function BoardElem(state, hideShips = false, size = 10) {
+function BoardElem(playerName,state, hideShips = false, size = 10) {
+    let boardWrapper=utils.textToHtml(`
+    <div class="player-container">
+        <h3  class="player-title">${playerName}</h3>
+    </div>
+    `)
+    
     let boardElem = utils.textToHtml(`
         <div class="board"></div>
     `)
+
+    boardWrapper.appendChild(boardElem)
+
     for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
             boardElem.appendChild(utils.textToHtml(`
@@ -43,6 +52,6 @@ function BoardElem(state, hideShips = false, size = 10) {
     }
     boardElem.update = update
     boardElem.tileElems = [...boardElem.children]
-    return boardElem
+    return boardWrapper
 }
 export { BoardElem }

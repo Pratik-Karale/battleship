@@ -18,8 +18,8 @@ player.board.place(Ship(4),false,1,2)
 player.board.place(Ship(3),true,3,5)
 player.board.place(Ship(2),true,8,3)
 
-player.boardElem=BoardElem(player.board.state)
-document.querySelector(".friendly-container").appendChild(player.boardElem)
+player.boardElem=BoardElem("Player",player.board.state)
+document.body.appendChild(player.boardElem)
 
 
 // place ships in playeers board
@@ -30,8 +30,8 @@ compPlayer.board.place(Ship(4),true,2,1)
 compPlayer.board.place(Ship(3),false,5,3)
 compPlayer.board.place(Ship(2),true,3,8)
 
-compPlayer.boardElem=BoardElem(compPlayer.board.state,true)
-document.querySelector(".enemy-container").appendChild(compPlayer.boardElem)
+compPlayer.boardElem=BoardElem("Computer",compPlayer.board.state,true)
+document.body.appendChild(compPlayer.boardElem)
 
 player.enemy.boardElem.tileElems.forEach(tileElem => {
     tileElem.addEventListener("click",()=>{
