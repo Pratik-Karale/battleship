@@ -50,8 +50,8 @@ function BoardElem(playerName,state, hideShips = false, size = 10) {
                 .classList.add("attacked-water")
         });
     }
-    boardElem.update = update
-    boardElem.tileElems = [...boardElem.children]
+    boardWrapper.update = update
+    boardWrapper.tileElems = [...boardElem.children]
     return boardWrapper
 }
 export { BoardElem }
