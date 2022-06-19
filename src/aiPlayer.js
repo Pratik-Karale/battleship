@@ -1,6 +1,21 @@
 import { Player } from "./player";
-
+import { Ship } from "./ship";
 class AiPlayer extends Player{
+    placeShips(){
+        const directions=["vertical","horizontal","diagonalRTL","diagonalLTR"]
+        const getRandCoord=()=>Math.floor(Math.random()*this.board.size)
+        for(let i=2;i<8;i++){
+            const randShip=Ship(i)
+            const randDirection=directions[Math.floor(Math.random()*directions.length)]
+            const randCoords=[getRandCoord(),getRandCoord()]
+            console.log(randShip.length,randCoords,randDirection)
+            if(this.board.canPlaceShip(randShip.length,randDirection,...randCoords)){
+                this.board.place(randShip,randDirection,...randCoords)
+            }else{
+                i--
+            }
+        }
+    }
     makeMove(){
         let chosenTileCoords
         do{
