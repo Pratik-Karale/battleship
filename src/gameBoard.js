@@ -2,21 +2,35 @@ export function Board(size=5){
     const board=Array(size).fill(0).map(()=>Array(size).fill(0))
     const ships=[]
     const state={hits:[],misses:[],shipParts:[]}
-    const place=(ship,horizontal,x,y)=>{
-        if((ship.length+x>size && horizontal) || (ship.length+y>size && !horizontal)){
+    const place=(ship,direction,x,y)=>{
+        if((ship.length+x>size && direction=="horizontal") || (ship.length+y>size && direction=="vertical")){
             throw new Error("ship cant be place outside the board")
         };
-        if(horizontal){
+        if(direction=="horizontal"){
             for(let i=0;i<ship.length;i++){
                 board[y][x]=ship[i]
                 state.shipParts.push([x,y])
                 x++
             }
-        }else{
+        }else if(direction=="vertical"){
             for(let i=0;i<ship.length;i++){
                 board[y][x]=ship[i]
                 state.shipParts.push([x,y])
                 y++
+            }
+        }else if(direction=="diagonalLTR"){
+            for(let i=0;i<ship.length;i++){
+                board[y][x]=ship[i]
+                state.shipParts.push([x,y])
+                y++
+                x++
+            }
+        }else if(direction=="diagonalRTL"){
+            for(let i=0;i<ship.length;i++){
+                board[y][x]=ship[i]
+                state.shipParts.push([x,y])
+                y++
+                x--
             }
         }
         ships.push(ship)

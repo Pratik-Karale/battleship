@@ -21,7 +21,7 @@ document.body.appendChild(player.boardElem)
 // player.board.place(Ship(3),true,3,5)
 // player.board.place(Ship(2),true,8,3)
 const shipLengthList = [2, 3, 4, 5, 6, 7]
-const isPlacingHorizontal = true
+let direction="diagonalLTR"
 
 player.boardElem.tileElems.forEach((tile) => {
     tile.addEventListener("mouseenter", () => {
@@ -30,22 +30,21 @@ player.boardElem.tileElems.forEach((tile) => {
         tile.addEventListener("mouseleave", leavehandler)
         function leavehandler() {
             for (let i = 0; i < current_length; i++) {
-                if (isPlacingHorizontal && x + current_length <=BOARD_SIZE) {
+                if (direction=="horizontal" && x + current_length <=BOARD_SIZE) {
                     document.querySelector(`[data-coords='${x + i},${y}']`).classList.remove("place")
-                } else if (!isPlacingHorizontal && y + current_length <=BOARD_SIZE) {
-                    document.querySelector(`[data-coords='${x},${y + 1}']`).classList.remove("place")
+                } else if (direction=="vertical" && y + current_length <=BOARD_SIZE) {
+                    document.querySelector(`[data-coords='${x},${y + i}']`).classList.remove("place")
                 }
             }
             removeEventListener("mouseleave", leavehandler)
         }
-        if ((isPlacingHorizontal && x + current_length <=BOARD_SIZE)) {
+        if ((direction=="horizontal" && x + current_length <=BOARD_SIZE)) {
             tile.classList.add("place")
             for (let i = 1; i < current_length; i++) {
                 document.querySelector(`[data-coords='${x + i},${y}']`).classList.add("place")
             }
-        } else if (!isPlacingHorizontal && y + current_length <=BOARD_SIZE) {
-            tile.classList.add("place")
-            for (let i = 1; i < current_length; i++) {
+        } else if (direction=="vertical" && y + current_length <=BOARD_SIZE) {
+            for (let i = 0; i < current_length; i++) {
                 document.querySelector(`[data-coords='${x},${y + i}']`).classList.add("place")
             }
         }
@@ -56,13 +55,8 @@ player.boardElem.tileElems.forEach((tile) => {
         console.log(121213)
         const [x, y] = utils.parseCoords(tile.getAttribute("data-coords"))
         const current_length = shipLengthList.at(-1)
-        if (isPlacingHorizontal && x + current_length <=BOARD_SIZE) {
-            player.board.place(Ship(current_length), isPlacingHorizontal, x, y)
-            shipLengthList.pop()
-        } else if (y + current_length <=BOARD_SIZE) {
-            player.board.place(Ship(current_length), isPlacingHorizontal, x, y)
-            shipLengthList.pop()
-        }
+        player.board.place(Ship(current_length), direction=direction, x, y)
+        shipLengthList.pop()
 
         if (shipLengthList.length == 0) {
             startGame()
