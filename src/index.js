@@ -1,65 +1,56 @@
 import { Board } from "./gameBoard"
 import { Ship } from "./ship"
-import { BoardElem } from "./domHandler"
+import { BoardElem,placeShipMenu } from "./domHandler"
 import { Player } from "./player"
 import { AiPlayer } from "./aiPlayer"
 import "./style.css"
 import { utils } from "./utils"
 
 const BOARD_SIZE = 10
-
+const shipLengthList = [2, 3, 4, 5, 6, 7]
+let direction="diagonalRTL"
 const player = new Player(Board(BOARD_SIZE))
-let allShipsPlaced = false
 
 player.boardElem = BoardElem("Player", player.board.state)
 document.body.appendChild(player.boardElem)
-// place ships in playeers board
-// player.board.place(Ship(7),true,0,0)
-// player.board.place(Ship(6),true,2,9)
-// player.board.place(Ship(5),true,5,6)
-// player.board.place(Ship(4),false,1,2)
-// player.board.place(Ship(3),true,3,5)
-// player.board.place(Ship(2),true,8,3)
-const shipLengthList = [2, 3, 4, 5, 6, 7]
-let direction="diagonalLTR"
+
+const placeMenu=placeShipMenu(()=>direction="vertical",()=>direction="horizontal",()=>direction="diagonalLTR",()=>direction="diagonalRTL",)
+placeMenu.changeShipLenDisplay(shipLengthList.at(-1))
+document.body.appendChild(placeMenu)
 
 player.boardElem.tileElems.forEach((tile) => {
     tile.addEventListener("mouseenter", () => {
-        const current_length = shipLengthList.at(-1)
         const [x, y] = utils.parseCoords(tile.getAttribute("data-coords"))
+        const current_length = shipLengthList.at(-1)
+
+        if (shipLengthList.length == 0) return;
+        if(!player.board.canPlaceShip(current_length,direction,x,y))return;
+        
+        const shipCoords=player.board.getShipCoords(current_length,direction,x,y)
+        const shipTileElems=player.boardElem.tileElems.filter((tileElem)=>{
+            return JSON.stringify(shipCoords).includes(`[${tileElem.getAttribute("data-coords")}]`)
+        })
+        shipTileElems.forEach((tileElem)=>tileElem.classList.add("place"))
+
         tile.addEventListener("mouseleave", leavehandler)
         function leavehandler() {
-            for (let i = 0; i < current_length; i++) {
-                if (direction=="horizontal" && x + current_length <=BOARD_SIZE) {
-                    document.querySelector(`[data-coords='${x + i},${y}']`).classList.remove("place")
-                } else if (direction=="vertical" && y + current_length <=BOARD_SIZE) {
-                    document.querySelector(`[data-coords='${x},${y + i}']`).classList.remove("place")
-                }
-            }
+            shipTileElems.forEach((tile)=>tile.classList.remove("place"))
             removeEventListener("mouseleave", leavehandler)
-        }
-        if ((direction=="horizontal" && x + current_length <=BOARD_SIZE)) {
-            tile.classList.add("place")
-            for (let i = 1; i < current_length; i++) {
-                document.querySelector(`[data-coords='${x + i},${y}']`).classList.add("place")
-            }
-        } else if (direction=="vertical" && y + current_length <=BOARD_SIZE) {
-            for (let i = 0; i < current_length; i++) {
-                document.querySelector(`[data-coords='${x},${y + i}']`).classList.add("place")
-            }
         }
     })
 });
 player.boardElem.tileElems.forEach((tile) => {
     tile.addEventListener("click", () => {
-        console.log(121213)
+        if (shipLengthList.length == 0) return;
         const [x, y] = utils.parseCoords(tile.getAttribute("data-coords"))
         const current_length = shipLengthList.at(-1)
-        player.board.place(Ship(current_length), direction=direction, x, y)
+        console.log(direction)
+        player.board.place(Ship(current_length),direction, x, y)
         shipLengthList.pop()
-
+        placeMenu.changeShipLenDisplay(shipLengthList.at(-1))
         if (shipLengthList.length == 0) {
             startGame()
+            placeMenu.remove()
         }
         player.boardElem.update()
     })
@@ -71,12 +62,7 @@ function startGame() {
     player.enemy = compPlayer
     compPlayer.enemy = player
     // place ships in playeers board
-    compPlayer.board.place(Ship(7), true, 0, 0)
-    compPlayer.board.place(Ship(6), false, 9, 2)
-    compPlayer.board.place(Ship(5), false, 6, 5)
-    compPlayer.board.place(Ship(4), true, 2, 1)
-    compPlayer.board.place(Ship(3), false, 5, 3)
-    compPlayer.board.place(Ship(2), true, 3, 8)
+    compPlayer.placeShips()
 
     compPlayer.boardElem = BoardElem("Computer", compPlayer.board.state, true)
     document.body.appendChild(compPlayer.boardElem)
@@ -90,15 +76,15 @@ function startGame() {
 
             if (player.enemy.board.isAllSunk()) {
                 alert("You WON!")
-                window.location = "/"
+                // window.location = "/"
             }
 
             compPlayer.makeMove()
             player.boardElem.update()
 
-            if (player.enemy.board.isAllSunk()) {
+            if (player.board.isAllSunk()) {
                 alert("You LOSE!")
-                window.location = "/"
+                // window.location = "/"
             }
 
         })
