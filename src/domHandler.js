@@ -48,4 +48,23 @@ function BoardElem(playerName,state, hideShips = false, size = 10) {
     boardWrapper.tileElems = [...boardElem.children]
     return boardWrapper
 }
-export { BoardElem }
+function placeShipMenu(handlerVertical,handlerHorizontal,handlerDiagonalLTR,handlerDiagonalRTL){
+    const menuElem=utils.textToHtml(`
+    <div class="place-ship-menu">
+        <span data-ship-length></span>
+        <button data-vertical-btn>Vertical</button>
+        <button  data-horizontal-btn>Horizontal</button>
+        <button data-diagonalLTR-btn>DiagonalLTR</button>
+        <button data-diagonalRTL-btn>DiagonalRTL</button>
+    </div>
+    `)
+    menuElem.querySelector("[data-vertical-btn]").addEventListener("click",handlerVertical)
+    menuElem.querySelector("[data-horizontal-btn]").addEventListener("click",handlerHorizontal)
+    menuElem.querySelector("[data-diagonalLTR-btn]").addEventListener("click",handlerDiagonalLTR)
+    menuElem.querySelector("[data-diagonalRTL-btn]").addEventListener("click",handlerDiagonalRTL)
+    menuElem.changeShipLenDisplay=(length)=>{
+        menuElem.querySelector("[data-ship-length]").textContent=length
+    }
+    return menuElem
+}
+export { BoardElem,placeShipMenu }
