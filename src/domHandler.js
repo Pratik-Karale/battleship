@@ -1,10 +1,4 @@
-const utils = {
-    textToHtml(text) {
-        const tempDiv = document.createElement("div")
-        tempDiv.innerHTML = text
-        return tempDiv.querySelector("*:first-child")
-    }
-}
+import {utils} from "./utils"
 // hits:[],misses:[],shipPart:[]
 function BoardElem(playerName,state, hideShips = false, size = 10) {
     let boardWrapper=utils.textToHtml(`
