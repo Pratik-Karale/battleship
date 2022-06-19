@@ -27,7 +27,12 @@ body{
     background-color: wheat;
     outline: 1px solid black;
 }
-
+.tile.place{
+    background-color: gray;
+}
+.tile.cant-place{
+    background-color: gray;
+}
 .tile.ship-part{
     background-color: black;
 }
