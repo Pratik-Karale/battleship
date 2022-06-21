@@ -1,5 +1,7 @@
 import {utils} from "./utils"
 // hits:[],misses:[],shipPart:[]
+import { Ship } from "./ship"
+
 function BoardElem(playerName,state, hideShips = false, size = 10) {
     let boardWrapper=utils.textToHtml(`
     <div class="player-container">
@@ -48,7 +50,7 @@ function BoardElem(playerName,state, hideShips = false, size = 10) {
     boardWrapper.tileElems = [...boardElem.children]
     return boardWrapper
 }
-function placeShipMenu(handlerVertical,handlerHorizontal,handlerDiagonalLTR,handlerDiagonalRTL){
+function placeShipMenu(board,boardElem){
     const menuElem=utils.textToHtml(`
     <div class="place-ship-menu">
         <span data-ship-length></span>
@@ -56,15 +58,56 @@ function placeShipMenu(handlerVertical,handlerHorizontal,handlerDiagonalLTR,hand
         <button  data-horizontal-btn>Horizontal</button>
         <button data-diagonalLTR-btn>DiagonalLTR</button>
         <button data-diagonalRTL-btn>DiagonalRTL</button>
-    </div>
-    `)
-    menuElem.querySelector("[data-vertical-btn]").addEventListener("click",handlerVertical)
-    menuElem.querySelector("[data-horizontal-btn]").addEventListener("click",handlerHorizontal)
-    menuElem.querySelector("[data-diagonalLTR-btn]").addEventListener("click",handlerDiagonalLTR)
-    menuElem.querySelector("[data-diagonalRTL-btn]").addEventListener("click",handlerDiagonalRTL)
-    menuElem.changeShipLenDisplay=(length)=>{
+        </div>
+        `)
+        
+    
+    const changeShipLenDisplay=(length)=>{
         menuElem.querySelector("[data-ship-length]").textContent=length
     }
+    const shipLengthList = [2, 3, 4, 5, 6, 7]
+    let direction="diagonalRTL"
+    boardElem.tileElems.forEach((tile) => {
+        tile.addEventListener("mouseenter", () => {
+            const [x, y] = utils.parseCoords(tile.getAttribute("data-coords"))
+            const current_length = shipLengthList.at(-1)
+    
+            if (shipLengthList.length == 0) return;
+            if(!board.canPlaceShip(current_length,direction,x,y))return;
+            
+            const shipCoords=board.getShipCoords(current_length,direction,x,y)
+            const shipTileElems=boardElem.tileElems.filter((tileElem)=>{
+                return JSON.stringify(shipCoords).includes(`[${tileElem.getAttribute("data-coords")}]`)
+            })
+            shipTileElems.forEach((tileElem)=>tileElem.classList.add("place"))
+    
+            tile.addEventListener("mouseleave", leavehandler)
+            function leavehandler() {
+                shipTileElems.forEach((tile)=>tile.classList.remove("place"))
+                removeEventListener("mouseleave", leavehandler)
+            }
+        })
+    });
+    boardElem.tileElems.forEach((tile) => {
+        tile.addEventListener("click", (() => {
+            if (shipLengthList.length == 0) return;
+            const [x, y] = utils.parseCoords(tile.getAttribute("data-coords"))
+            const current_length = shipLengthList.at(-1)
+            console.log(direction)
+            board.place(Ship(current_length),direction, x, y)
+            shipLengthList.pop()
+            changeShipLenDisplay(shipLengthList.at(-1))
+            if (shipLengthList.length == 0) {
+                menuElem.remove()
+            }
+            boardElem.update()
+        }))
+    })
+    // ()=>direction="vertical",()=>direction="horizontal",()=>direction="diagonalLTR",()=>direction="diagonalRTL",
+    menuElem.querySelector("[data-vertical-btn]").addEventListener("click",()=>direction="vertical")
+    menuElem.querySelector("[data-horizontal-btn]").addEventListener("click",()=>direction="horizontal")
+    menuElem.querySelector("[data-diagonalLTR-btn]").addEventListener("click",()=>direction="diagonalLTR")
+    menuElem.querySelector("[data-diagonalRTL-btn]").addEventListener("click",()=>direction="diagonalRTL")
     return menuElem
 }
 export { BoardElem,placeShipMenu }
