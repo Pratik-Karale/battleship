@@ -110,4 +110,12 @@ function placeShipMenu(board,boardElem){
     menuElem.querySelector("[data-diagonalRTL-btn]").addEventListener("click",()=>direction="diagonalRTL")
     return menuElem
 }
-export { BoardElem,placeShipMenu }
+
+function mainMenu(compEvtListener,friendEvtListener){
+    const menuElem=utils.textToHtml(`<div class="game-menu"><button class="play-computer-btn">Play with computer</button><button class="play-friend-btn">Play with a friend</button></div>`)
+    menuElem.querySelector(".play-computer-btn").addEventListener("click",()=>{compEvtListener();menuElem.remove()})
+    menuElem.querySelector(".play-friend-btn").addEventListener("click",()=>{friendEvtListener();menuElem.remove()})
+    return menuElem
+
+}
+export { BoardElem,placeShipMenu ,mainMenu}

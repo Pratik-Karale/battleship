@@ -17,4 +17,4 @@ const Ship=(length)=>{
     daShip.isSunk=isSunk
     return daShip
 };
-export {Ship}
+export {Ship,ShipPart}

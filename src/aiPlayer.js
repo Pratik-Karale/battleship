@@ -8,7 +8,6 @@ class AiPlayer extends Player{
             const randShip=Ship(i)
             const randDirection=directions[Math.floor(Math.random()*directions.length)]
             const randCoords=[getRandCoord(),getRandCoord()]
-            console.log(randShip.length,randCoords,randDirection)
             if(this.board.canPlaceShip(randShip.length,randDirection,...randCoords)){
                 this.board.place(randShip,randDirection,...randCoords)
             }else{

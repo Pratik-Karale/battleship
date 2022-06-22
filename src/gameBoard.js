@@ -1,3 +1,5 @@
+import { ShipPart } from "./ship"
+
 export function Board(size=5){
     const board=Array(size).fill(0).map(()=>Array(size).fill(0))
     const ships=[]
@@ -39,14 +41,21 @@ export function Board(size=5){
         if(board[y][x]==0){
             state.misses.push([x,y])
             board[y][x]=1
-        }else if(board[y][x]!=1){
+        }else if(board[y][x]!=1 && board[y][x].isHit && !board[y][x].isHit()){
             state.hits.push([x,y])
             const hitShipPart=board[y][x]
             hitShipPart.hit()
         }
     }
-    const isAllSunk=()=>ships.every((ship)=>ship.isSunk())
     const getTile=(x,y)=>board[y][x]
+    const isAllSunk=()=>state.shipParts.map(shipPartCoord=>getTile(...shipPartCoord)).every(shipPart=>shipPart.isHit)
     const isTileEmpty=(x,y)=>board[y][x]==0 || board[y][x].isHit==false
-    return {place,getTile,recieveAttack,size:board.length,isAllSunk,state,isTileEmpty,canPlaceShip,getShipCoords}
+    const placeShipFromPartsCoords=(shipPartsCoords)=>{
+        shipPartsCoords.forEach(shipPartCoords=>board[shipPartCoords[0]][shipPartCoords[1]]=ShipPart())
+        state.shipParts=[...state.shipParts,...shipPartsCoords]
+    }
+    const updateFromState=(state)=>{
+        state.hits.forEach(hitCoords=>recieveAttack(...hitCoords))
+    }
+    return {place,getTile,recieveAttack,size:board.length,isAllSunk,state,isTileEmpty,canPlaceShip,getShipCoords,placeShipFromPartsCoords,updateFromState}
 }
