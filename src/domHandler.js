@@ -5,7 +5,7 @@ import { Ship } from "./ship"
 function BoardElem(playerName,state, hideShips = false, size = 10) {
     let boardWrapper=utils.textToHtml(`
     <div class="player-container">
-        <h3  class="player-title">${playerName}</h3>
+        <h3  class="player-title ${playerName}-board">${playerName}</h3>
     </div>
     `)
     

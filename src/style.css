@@ -15,6 +15,7 @@ body{
     grid-template-rows: repeat(4,1fr);
 }
 .board{
+    /* transform: scale(0.5); */
     display:grid;
     width:var(--board-size);
     height:var(--board-size);
@@ -22,6 +23,7 @@ body{
     background-color: black;
     grid-template-columns: repeat(10,10%);
     grid-template-rows: repeat(10,10%);
+    outline: red 2px solid;
 }
 .tile{
     background-color: wheat;
@@ -45,4 +47,7 @@ body{
 
 .game-title{
     grid-column: 1/-1;
+}
+.current-player-title{
+    text-decoration: underline;
 }
