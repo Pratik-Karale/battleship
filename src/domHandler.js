@@ -54,10 +54,10 @@ function placeShipMenu(board,boardElem){
     const menuElem=utils.textToHtml(`
     <div class="place-ship-menu">
         <span data-ship-length></span>
-        <button data-vertical-btn>Vertical</button>
-        <button  data-horizontal-btn>Horizontal</button>
-        <button data-diagonalLTR-btn>DiagonalLTR</button>
-        <button data-diagonalRTL-btn>DiagonalRTL</button>
+        <button data-vertical-btn title="Place Vertically"></button>
+        <button  data-horizontal-btn title="Place Horizontally"></button>
+        <button data-diagonalLTR-btn title="Place Diagonal-LTR"></button>
+        <button data-diagonalRTL-btn title="Place Diagonal-RTL"></button>
         </div>
         `)
         
@@ -103,11 +103,15 @@ function placeShipMenu(board,boardElem){
             boardElem.update()
         }))
     })
-    // ()=>direction="vertical",()=>direction="horizontal",()=>direction="diagonalLTR",()=>direction="diagonalRTL",
-    menuElem.querySelector("[data-vertical-btn]").addEventListener("click",()=>direction="vertical")
-    menuElem.querySelector("[data-horizontal-btn]").addEventListener("click",()=>direction="horizontal")
-    menuElem.querySelector("[data-diagonalLTR-btn]").addEventListener("click",()=>direction="diagonalLTR")
-    menuElem.querySelector("[data-diagonalRTL-btn]").addEventListener("click",()=>direction="diagonalRTL")
+    
+    menuElem.querySelectorAll("button").forEach((placeBtn)=>placeBtn.addEventListener("click",()=>{
+        direction=placeBtn.getAttributeNames().find(attr=>attr.includes("data")).split("-")[1]
+        if(direction.includes("diagonal")){
+            direction="diagonal"+(direction.slice(8).toUpperCase())
+        }
+        menuElem.querySelectorAll("button").forEach(btn=>btn.classList.remove("active-place-btn"))
+        placeBtn.classList.add("active-place-btn")
+    }))
     return menuElem
 }
 
@@ -118,4 +122,22 @@ function mainMenu(compEvtListener,friendEvtListener){
     return menuElem
 
 }
-export { BoardElem,placeShipMenu ,mainMenu}
+
+function gameAlert(msg,callback){
+    let gameAlert=utils.textToHtml(`
+    <div class="game-alert">
+        <div class="alert-box">
+            <h3 class="game-alert-msg"></h3>
+            <button class="game-alert-close-btn">OK</button>
+        </div>
+    </div>
+    `)
+    gameAlert.querySelector(".game-alert-msg").innerText=msg
+    document.body.appendChild(gameAlert)
+
+    gameAlert.querySelector(".game-alert-close-btn").addEventListener("click",()=>{
+        gameAlert.remove();
+        callback()
+    })
+}
+export { BoardElem,placeShipMenu ,mainMenu,gameAlert}

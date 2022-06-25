@@ -4,7 +4,7 @@ import {getDatabase,ref,set,serverTimestamp,update,onValue,child,get,onDisconnec
 import { matchComputer } from "./matchComp";
 import { mainMenu } from "./domHandler";
 import { Board } from "./gameBoard"
-import { BoardElem,placeShipMenu } from "./domHandler"
+import { BoardElem,placeShipMenu,gameAlert } from "./domHandler"
 import { Player } from "./player"
 import { utils } from "./utils"
 
@@ -29,7 +29,7 @@ const db=getDatabase(app)
 let dbMatchRef;
 let gameStarted=false
 
-signInAnonymously(auth).then(a=>console.log(auth.currentUser)).catch(()=>console.log("BRUHHH!"))
+signInAnonymously(auth).catch(()=>{throw new Error("Unable to authenticate!")})
 const secondPlayer={
     secondMatchID:(new URL(window.location.href)).searchParams.get("matchID"),
 }
@@ -51,7 +51,7 @@ const gameMainMenu=mainMenu(matchComputer.start,()=>{
             currentPlayerIndex:Math.round(Math.random()),
             winner:null
         })
-        alert("share link copied!")
+        gameAlert("Share link copied!")
     }else{//player is playing through a link
         dbMatchRef=ref(db,"matches/"+secondPlayer.secondMatchID)
         update(child(dbMatchRef,"activePlayers"),{1:auth.currentUser.uid})
@@ -68,9 +68,7 @@ const gameMainMenu=mainMenu(matchComputer.start,()=>{
     onValue(activePlayersRef,snap=>{
         if(snap.val().length>1){
             if(snap.val().includes(undefined) || snap.val().length<2){
-                console.log(snap.val())
-                alert("One of the players has left the match")
-                window.location='/'
+                gameAlert("One of the players has left the match",()=>window.location='/')
             }
             waitingScreen.remove()
             const BOARD_SIZE = 10
@@ -88,15 +86,11 @@ const gameMainMenu=mainMenu(matchComputer.start,()=>{
             const startGameInterval=setInterval(()=>{
                 if(document.body.contains(placeMenu))return;
                 set(child(dbMatchRef,`p${player.index}_area`),{}).then((q)=>{
-                    console.log("UHWUIH!@#GY@HG#YG@B#$Y@GY$#%HBJ#GH%$U#HG$UJ#GU$G@UGH$#UJGJK$@GUJH#G@UIG#$Y")
-                    console.log(q)
                 })
                 set(child(dbMatchRef,`p${player.index}_area`),player.board.state)
                 onValue(child(dbMatchRef,`p${Number(!player.index)}_area`),function (enemyAreaSnap){
                     if(enemyAreaSnap.exists() && !gameStarted){
                         gameStarted=true
-                        
-                        console.log("game is starting!")
                         startMultiplayerGame(player)
                     }
                 })
@@ -110,11 +104,11 @@ const gameMainMenu=mainMenu(matchComputer.start,()=>{
 document.body.appendChild(gameMainMenu)
 
 startMultiplayerGame=(player)=>{
-    alert("started")
+    gameAlert("Game Started!")
     const enemy=new Player(Board(10))
     enemy.index=Number(!player.index)
     
-    enemy.boardElem = BoardElem("Enemy", enemy.board.state)
+    enemy.boardElem = BoardElem("Enemy", enemy.board.state,true)
     document.body.appendChild(enemy.boardElem)
 
     let currentPlayerIndex;
@@ -140,9 +134,13 @@ startMultiplayerGame=(player)=>{
         if(secondPlayer.isSecondPlayer==currentPlayerIndex){
             document.querySelectorAll("h3")[0].classList.add("current-player-title")
             document.querySelectorAll("h3")[1].classList.remove("current-player-title")
+            document.querySelectorAll(".player-container")[1].classList.add("under-attack")
+            document.querySelectorAll(".player-container")[0].classList.remove("under-attack")
         }else{
             document.querySelectorAll("h3")[1].classList.add("current-player-title")
             document.querySelectorAll("h3")[0].classList.remove("current-player-title")
+            document.querySelectorAll(".player-container")[0].classList.add("under-attack")
+            document.querySelectorAll(".player-container")[1].classList.remove("under-attack")
         }
     })
     onValue(child(dbMatchRef,`p${player.index}_area`),(snap)=>{
@@ -150,8 +148,7 @@ startMultiplayerGame=(player)=>{
         player.board.updateFromState(updatedState)
             player.boardElem.update()
             if (player.board.isAllSunk()) {
-                alert("You LOSE!")
-                window.location = "/"
+                gameAlert("You LOSE!",()=>window.location='/')
             }
     })
     onValue(child(dbMatchRef,`p${enemy.index}_area/shipParts`),snap=>{
@@ -164,8 +161,7 @@ startMultiplayerGame=(player)=>{
         enemy.board.updateFromState(updatedState)
         enemy.boardElem.update()
         if (enemy.board.isAllSunk()) {
-            alert("You WON!")
-            window.location = "/"
+            gameAlert("You WON!",()=>window.location = "/")
         }
     })
 }
