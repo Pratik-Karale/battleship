@@ -1,9 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{
     --board-size:350px;
 }
-
-
+.game-alert{
+    position:absolute;
+    background: #00000096;
+    top:0;left:0;right:0;bottom:0;
+    display:grid;
+    z-index:100;
+    place-items: center;
+}
+.alert-box{
+    text-align:center;
+    background: black;
+    padding: 1em;
+    border:3px solid red;
+}
+.alert-box button{
+   font-family: 'Press Start 2P', cursive;
+    background: none;
+    color:red;
+    width:50%;
+    padding: 0.5rem;
+    border:1px solid red;
+    transition: 0.1s;
+}
+.alert-box button:hover{
+    background: red;
+    color:white;
+}
 body{
+    background:  linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),url("https://media0.giphy.com/media/XcYYMmDkEFiXvaHKeS/giphy.gif?cid=ecf05e47w8qdrxzfc6v0b3sdqoppq67pf28e9ja8z2i701qu&rid=giphy.gif&ct=g");
+    background-size: 100%;
     margin:0;
     height: 100vh;
     overflow-y: hidden;
@@ -12,32 +40,107 @@ body{
     place-items: center;
     padding: 1rem 5rem;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(4,1fr);
+    color:white;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.game-title{
+    color:greenyellow;
+}
+.player-container{
+    border:3px solid white;
+    padding: 1em;
+    border-radius:10px;
+}
+.under-attack{
+    background: #ae0707;
+}
+.player-title{
+    text-align: center;
 }
 .board{
     display:grid;
     width:var(--board-size);
     height:var(--board-size);
-    /* gap:0.5rem; */
     background-color: black;
     grid-template-columns: repeat(10,10%);
     grid-template-rows: repeat(10,10%);
+    outline: white 7px double;
 }
 .tile{
-    background-color: wheat;
-    outline: 1px solid black;
+    background:url("https://i.ibb.co/Dbj9wZB/sea.png");
+    background-color: blue;
+    outline: 1px solid #0b2e54;
+    position:relative;
 }
-
+.tile.place{
+    background: gray;
+}
+.tile.cant-place{
+    background: gray;
+}
 .tile.ship-part{
-    background-color: black;
+    background: silver;
 }
 .tile.attacked-ship-part{
+    background:url("https://i.ibb.co/ChSWzWZ/pixil-frame-0.png");
     background-color: red;
+    background-size:100%;
 }
 .tile.attacked-water{
-    background-color: blue;
+    background: url("https://i.ibb.co/prhS8Ck/water-splash.png");
+    background-color: aqua;
+    background-size:100%;
+}
+
+.place-ship-menu button{
+    display: inline-block;
+    width:75px;height:75px;
+    border-radius: 10px;
+    border:1px solid black;
+}
+[data-diagonalrtl-btn]{
+   background: url("https://i.ibb.co/9wTCBzx/rtl-ship.png");
+}[data-diagonalltr-btn]{
+   background: url("https://i.ibb.co/3p5LtWR/ltr-ship.png");
+}[data-vertical-btn]{
+   background: url("https://i.ibb.co/n0pr2zh/pixil-frame-0-3.png");
+}[data-horizontal-btn]{
+   background: url("https://i.ibb.co/2tRmGrJ/hori-ship.png");
 }
 
 .game-title{
     grid-column: 1/-1;
+}
+.current-player-title{
+    text-decoration: underline;
+}
+.game-menu{
+    text-align: center;
+    border:2px solid white;
+    width:60%;
+    display: flex;
+    flex-direction: column;
+    height:300px;
+    gap:1em;
+    grid-column:1/-1;
+    padding: 3em;
+}
+.game-menu *{
+    flex-grow: 1;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.1em;
+    border:none;
+    transition:0.2s;
+}
+.game-menu *:hover{
+    background-color: green;
+    transform:scale(1.05);
+}
+
+ @media only screen and (max-width: 950px) {
+     body{
+         grid-template-columns: 1fr;
+         overflow-y: scroll;
+     }
 }
