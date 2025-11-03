@@ -48,12 +48,16 @@ async function login(username, password) {
             throw new Error(err.message);
         }
 
-        const { token } = await response.json();
+        // --- FIX: Destructure PlayerID from the response ---
+        const { token, PlayerID } = await response.json();
         localStorage.setItem('token', token);
         authToken = token;
         
-        initializeSocket(); // Connect to real-time server
-        showMainMenu();     // Show the main game menu
+        // --- FIX: Set the global PlayerID variable ---
+        myPlayerID = PlayerID; 
+
+        initializeSocket();
+        showMainMenu();
         
     } catch (error) {
         gameAlert(`Login Failed: ${error.message}`);
@@ -84,6 +88,35 @@ async function register(username, password) {
     }
 }
 
+// ===================================================================
+// ✨ NEW FUNCTION: FETCH PLAYER ID
+// ===================================================================
+
+/**
+ * Fetches the PlayerID using the stored authToken.
+ * This assumes your server has a protected endpoint like /api/me 
+ * that returns { PlayerID: '...' } when given a valid token.
+ */
+async function fetchPlayerID(token) {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/me`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch user data');
+        }
+
+        const data = await response.json();
+        return data.PlayerID; // Server should return { PlayerID: '...' }
+    } catch (error) {
+        console.error('Error fetching PlayerID:', error);
+        return null;
+    }
+}
+
+
 /**
  * Connects to the Socket.io server and authenticates
  */
@@ -101,9 +134,7 @@ function initializeSocket() {
 
     socket.on('authenticated', () => {
         console.log('Socket authenticated successfully.');
-        // You can get the playerID from the decoded token on the client
-        // For simplicity, we'll get it from the server, or just save it from login
-        // (This part is simplified; a real app would decode the JWT)
+        // If myPlayerID is null here, it will be set by initializeApp
     });
 
     socket.on('unauthorized', (msg) => {
@@ -122,10 +153,21 @@ function initializeSocket() {
 /**
  * Checks if the user is already logged in on page load
  */
-function initializeApp() {
+async function initializeApp() {
     if (authToken) {
-        initializeSocket();
-        showMainMenu();
+        // --- MODIFIED: Fetch Player ID before initializing socket and UI ---
+        myPlayerID = await fetchPlayerID(authToken);
+        
+        if (myPlayerID) {
+            initializeSocket();
+            showMainMenu();
+        } else {
+            // Token might be expired or invalid
+            localStorage.removeItem('token');
+            authToken = null;
+            gameAlert('Session expired. Please log in.');
+            showLoginScreen();
+        }
     } else {
         showLoginScreen();
     }
@@ -180,7 +222,7 @@ function showMainMenu() {
     // function is now powered by Socket.io
     const gameMainMenu = mainMenu(
         matchComputer.start, // "Play vs. Computer" - still works, it's client-side
-        startOnlineMatchmaking  // "Play Online" - now points to our new function
+        startOnlineMatchmaking  // "Play Online" - now points to our new function
     );
     appContainer.appendChild(gameMainMenu);
 }
@@ -204,7 +246,7 @@ function startOnlineMatchmaking() {
     // Tell the server we want to find a match
     console.log("Emitting 'matchmaking.find'");
     // setInterval(() => {
-        socket.emit('matchmaking.find');
+        socket.emit('matchmaking.find');
     // }, 5000);
 }
 
@@ -215,111 +257,107 @@ function setupSocketListeners() {
     
     // Server has found a match
     socket.on('match.found', (data) => { 
-        console.log('Match found!', data);
-        gameID = data.GameID; // Save the GameID
-        
-        // This is a simplification: assuming 'authenticate' event
-        // returns the player ID or we decode the JWT.
-        // For now, we'll need the server to tell us who is who.
-        // Let's assume 'data' includes 'PlayerID'
-        // myPlayerID = data.PlayerID; // **ASSUMPTION**: server sends this
-        // currentPlayerID = data.CurrentTurnPlayerID;
+        console.log('Match found!', data);
+        gameID = data.GameID; // Save the GameID
+        
+        currentPlayerID = data.CurrentTurnPlayerID;
+        console.log("My PlayerID:", myPlayerID, "Current Turn PlayerID:", currentPlayerID);
 
-        // --- Start placing ships ---
-        appContainer.innerHTML = ''; // Clear waiting screen
-        const BOARD_SIZE = 10;
-        
-        player = new Player(Board(BOARD_SIZE));
-        // player.index = ... (we don't need index, we use PlayerID)
-        player.boardElem = BoardElem("Player", player.board.state);
-        appContainer.appendChild(player.boardElem);
+        // --- Start placing ships ---
+        appContainer.innerHTML = ''; // Clear waiting screen
+        const BOARD_SIZE = 10;
+        
+        player = new Player(Board(BOARD_SIZE));
+        // player.index = ... (we don't need index, we use PlayerID)
+        player.boardElem = BoardElem("Player", player.board.state);
+        appContainer.appendChild(player.boardElem);
 
-        const placeMenu = placeShipMenu(player.board, player.boardElem);
-        appContainer.appendChild(placeMenu);
+        const placeMenu = placeShipMenu(player.board, player.boardElem);
+        appContainer.appendChild(placeMenu);
 
-        // Check if player has placed all the ships
-        const startGameInterval = setInterval(() => {
-            if (document.body.contains(placeMenu)) return;
-            
-            // Player is done. Send ship placements to server.
-            // const shipParts = player.board.state.shipParts.map(part => {
-            //     return { x: part[0], y: part[1], type: 'unknown' }; // Type isn't in state, simplified
-            // });
-            // A better way: get ships from player.board.ships
-            // For now, this is a placeholder. Your 'placeShipMenu' needs to populate
-            // the 'player.board' correctly.
-            
-            // Re-get ship parts from the board object
-            const allShips = [];
-            
-            player.board.boardActual.forEach((row, y) => {
-                row.forEach((cell, x) => {
-                    if (cell.isHit !== undefined) { // It's a ship part
-                        // This logic needs to be better, depends on your 'Ship' object
-                        // Assuming board stores the *type* or a reference
-                        allShips.push({ x, y, type: 'Ship' });
-                    }
-                });
-            });
+        // Check if player has placed all the ships
+        const startGameInterval = setInterval(() => {
+            if (document.body.contains(placeMenu)) return;
+            
+            // Player is done. Send ship placements to server.
+            // const shipParts = player.board.state.shipParts.map(part => {
+            //     return { x: part[0], y: part[1], type: 'unknown' }; // Type isn't in state, simplified
+            // });
+            // A better way: get ships from player.board.ships
+            // For now, this is a placeholder. Your 'placeShipMenu' needs to populate
+            // the 'player.board' correctly.
+            
+            // Re-get ship parts from the board object
+            const allShips = [];
+            
+            player.board.boardActual.forEach((row, y) => {
+                row.forEach((cell, x) => {
+                    if (cell.isHit !== undefined) { // It's a ship part
+                        // This logic needs to be better, depends on your 'Ship' object
+                        // Assuming board stores the *type* or a reference
+                        allShips.push({ x, y, type: 'Ship' });
+                    }
+                });
+            });
 
-            console.log("Sending ship placements...", allShips);
-            socket.emit('game.placeShips', { gameID, ships: allShips });
+            console.log("Sending ship placements...", allShips);
+            socket.emit('game.placeShips', { gameID, ships: allShips });
 
-            clearInterval(startGameInterval);
-        }, 300);
+            clearInterval(startGameInterval);
+        }, 300);
     });
 
     // Both players have placed ships, game is starting
     socket.on('game.start', (data) => {
-        console.log('Game is starting!', data);
-        // data might contain enemyID, etc.
-        gameAlert("Game Started!");
-        startMultiplayerGame(player, data.OpponentID);
+        console.log('Game is starting!', data);
+        // data might contain enemyID, etc.
+        gameAlert("Game Started!");
+        startMultiplayerGame(player, data.OpponentID);
     });
 
     // Result of a move (yours or opponent's)
     socket.on('game.move.result', (data) => {
-        const { AttackingPlayerID, x, y, Result } = data;
-        console.log('currentPlayerID:', currentPlayerID, 'myPlayerID:', myPlayerID);
-        console.log(`Move result received: Player ${AttackingPlayerID} attacked [${x},${y}] => ${Result}`);
-        if (AttackingPlayerID === myPlayerID) {
-            // This was *my* move
-            console.log(`My attack at [${x},${y}] was a ${Result}`);
-            enemy.board.recieveAttack(x, y); // Update enemy board visually
-            enemy.boardElem.update();
-        } else {
-            // This was the *enemy's* move
-            console.log(`Enemy attack at [${x},${y}] was a ${Result}`);
-            player.board.recieveAttack(x, y); // Update my board
-            player.boardElem.update();
-            if (player.board.isAllSunk()) {
-                // We don't need this, server will tell us 'game.over'
-                // gameAlert("You LOSE!",()=>window.location='/')
-            }
-        }
-        
-        // Handle turn change
-        if (Result === 'Miss') {
-            // Turn switches
-            currentPlayerID = (currentPlayerID === myPlayerID) ? data.DefendingPlayerID : myPlayerID;
-        }
-        // If 'Hit', turn stays the same.
-        updateTurnUI();
+        const { AttackingPlayerID, x, y, Result } = data;
+        console.log('currentPlayerID:', currentPlayerID, 'myPlayerID:', myPlayerID);
+        console.log(`Move result received: Player ${AttackingPlayerID} attacked [${x},${y}] => ${Result}`);
+        if (AttackingPlayerID === myPlayerID) {
+            // This was *my* move
+            console.log(`My attack at [${x},${y}] was a ${Result}`);
+            enemy.board.recieveAttack(x, y, Result); // Update enemy board visually
+            enemy.boardElem.update();
+        } else {
+            // This was the *enemy's* move
+            console.log(`Enemy attack at [${x},${y}] was a ${Result}`);
+            player.board.recieveAttack(x, y); // Update my board
+            player.boardElem.update();
+            if (player.board.isAllSunk()) {
+                // We don't need this, server will tell us 'game.over'
+                // gameAlert("You LOSE!",()=>window.location='/')
+            }
+        }
+        
+        // Handle turn change
+        if (Result === 'Miss') {
+            // Turn switches
+            currentPlayerID = (currentPlayerID === myPlayerID) ? data.DefendingPlayerID : myPlayerID;
+        }
+        // If 'Hit', turn stays the same.
+        updateTurnUI();
     });
 
     // Game is over
     socket.on('game.over', (data) => {
-        const { WinnerID } = data;
-        if (WinnerID === myPlayerID) {
-            gameAlert("You WON!", () => window.location = "/");
-        } else {
-            gameAlert("You LOSE!", () => window.location = "/");
-        }
+        const { WinnerID } = data;
+        if (WinnerID === myPlayerID) {
+            gameAlert("You WON!", () => window.location = "/");
+        } else {
+            gameAlert("You LOSE!", () => window.location = "/");
+        }
     });
     
     // Opponent disconnected
     socket.on('game.opponent.left', (data) => {
-        gameAlert("Opponent disconnected. You WIN!", () => window.location = "/");
+        gameAlert("Opponent disconnected. You WIN!", () => window.location = "/");
     });
 }
 
@@ -330,32 +368,32 @@ function setupSocketListeners() {
 function startMultiplayerGame(player, opponentID) {
     // We already have our own board, just need the enemy's
     window.enemy = new Player(Board(10)); // 'enemy' is global for the listener
-    // enemy.id = opponentID; // Store opponent's ID
+    enemy.id = opponentID; // Store opponent's ID
     
     enemy.boardElem = BoardElem("Enemy", enemy.board.state, true);
     appContainer.appendChild(enemy.boardElem);
 
     // Add click listeners to the enemy board
     enemy.boardElem.tileElems.forEach(tileElem => {
-        tileElem.addEventListener("click", () => {
-            if (currentPlayerID !== myPlayerID) {
-                gameAlert("Not your turn!");
-                return; // Not our turn
-            }
-            
-            const tileCoords = tileElem.getAttribute("data-coords").split(",");
-            const [x, y] = tileCoords.map(Number);
-            
-            if (!enemy.board.isTileEmpty(x, y)) {
-                gameAlert("Already attacked here!");
-                return; // Already shot here
-            }
+        tileElem.addEventListener("click", () => {
+            if (currentPlayerID !== myPlayerID) {
+                gameAlert("Not your turn!");
+                return; // Not our turn
+            }
+            
+            const tileCoords = tileElem.getAttribute("data-coords").split(",");
+            const [x, y] = tileCoords.map(Number);
+            
+            if (!enemy.board.isTileEmpty(x, y)) {
+                gameAlert("Already attacked here!");
+                return; // Already shot here
+            }
 
-            // Client no longer processes the attack
-            // It just sends the move to the server
-            console.log(`Emitting 'game.move' at [${x},${y}]`);
-            socket.emit('game.move', { gameID, x, y });
-        });
+            // Client no longer processes the attack
+            // It just sends the move to the server
+            console.log(`Emitting 'game.move' at [${x},${y}]`);
+            socket.emit('game.move', { gameID, x, y });
+        });
     });
     
     // Set initial turn UI
@@ -373,15 +411,15 @@ function updateTurnUI() {
     const enemyContainer = document.querySelectorAll(".player-container")[1];
 
     if (currentPlayerID === myPlayerID) {
-        myBoardTitle.classList.add("current-player-title");
-        enemyBoardTitle.classList.remove("current-player-title");
-        enemyContainer.classList.add("under-attack");
-        myContainer.classList.remove("under-attack");
+        myBoardTitle.classList.add("current-player-title");
+        enemyBoardTitle.classList.remove("current-player-title");
+        enemyContainer.classList.add("under-attack");
+        myContainer.classList.remove("under-attack");
     } else {
-        enemyBoardTitle.classList.add("current-player-title");
-        myBoardTitle.classList.remove("current-player-title");
-        myContainer.classList.add("under-attack");
-        enemyContainer.classList.remove("under-attack");
+        enemyBoardTitle.classList.add("current-player-title");
+        myBoardTitle.classList.remove("current-player-title");
+        myContainer.classList.add("under-attack");
+        enemyContainer.classList.remove("under-attack");
     }
 }
 

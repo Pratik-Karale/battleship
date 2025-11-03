@@ -19,7 +19,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'your-very-secret-key'; // Change this in production
+const JWT_SECRET = 'your-very-secret-dkey'; // Change this in production
 const SALT_ROUNDS = 10;
 
 // --- Middleware ---
@@ -110,18 +110,46 @@ app.post('/api/login', async (req, res) => {
 
         // Update player's online status
         await dbPool.query('UPDATE Players SET IsOnline = 1 WHERE PlayerID = ?', [player.PlayerID]);
-
-        // Create a JWT
-        const token = jwt.sign(
+const token = jwt.sign(
             { PlayerID: player.PlayerID, Username: username },
             JWT_SECRET,
-            { expiresIn: '1d' } // Token expires in 1 day
+            { expiresIn: '1d' }
         );
 
-        res.json({ message: 'Login successful', token });
+        // --- FIX: Add PlayerID to the response body ---
+        res.json({ message: 'Login successful', token, PlayerID: player.PlayerID });
 
     } catch (error) {
         res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+});
+
+/**
+ * 4. Get Current User Info (Protected Endpoint)
+ * Requires a valid JWT in the Authorization header to return the PlayerID.
+ */
+app.get('/api/me', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Authorization token not provided.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // The token contains PlayerID, so we don't need a DB query.
+        // We just return the data that was encoded in the token.
+        res.json({ 
+            PlayerID: decoded.PlayerID,
+            Username: decoded.Username 
+        });
+
+    } catch (error) {
+        // This handles expired or invalid tokens
+        return res.status(403).json({ message: 'Invalid or expired token.' });
     }
 });
 
@@ -226,8 +254,11 @@ io.on('connection', (socket) => {
             await conn.beginTransaction();
 
             const query = 'INSERT INTO ShipPlacements (GameID, PlayerID, X_Coord, Y_Coord, ShipType) VALUES ?';
+            console.log("ships to place:", ships);
             const values = ships.map(part => [gameID, authenticatedPlayerID, part.x, part.y, part.type]);
             await conn.query(query, [values]);
+            console.log("Inserted ship parts into DB.");
+            console.log("Ships placed for PlayerID:", authenticatedPlayerID, "in GameID:", gameID);
             
             // Now, call the SP to confirm placement
             // The trigger `tr_CheckGameStart` will fire automatically in the DB
@@ -235,30 +266,49 @@ io.on('connection', (socket) => {
             
             await conn.commit();
             conn.release();
+            console.log("Ship placement confirmed for PlayerID:", authenticatedPlayerID, "in GameID:", gameID);
 
 
             // Check if the game state has updated to 'InProgress'
             const [[game]] = await dbPool.query('SELECT GameState FROM Games WHERE GameID = ?', [gameID]);
             if (game.GameState === 'InProgress') {
-                io.to(gameID).emit('game.start', { OpponentID:getOpponentID(gameID, authenticatedPlayerID) });
-            }
+
+    // --- Retrieve Player IDs ---
+    const playerID1 = authenticatedPlayerID;
+    const playerID2 = await getOpponentID(gameID, playerID1);
+
+    // --- Get the Socket IDs for private messaging ---
+    const socketID1 = playerSocketMap.get(playerID1);
+    const socketID2 = playerSocketMap.get(playerID2);
+    
+    // --- Send private 'game.start' events ---
+
+    // 1. Send to the player who just confirmed ships (playerID1)
+    if (socketID1) {
+        io.to(socketID1).emit('game.start', { OpponentID: playerID2 });
+    }
+
+    // 2. Send to the opponent (playerID2)
+    if (socketID2) {
+        io.to(socketID2).emit('game.start', { OpponentID: playerID1 });
+    }
+}
 
         } catch (error) {
             socket.emit('error', 'Failed to place ships: ' + error.message);
         }
     });
-    function getOpponentID(gameID, playerID) {
-        const [res]=dbPool.query(
+    async function getOpponentID(gameID, playerID) {
+        const [rows] = await dbPool.query(
             `SELECT PlayerID FROM Player_Games WHERE GameID = ? AND PlayerID != ?`,
             [gameID, playerID]
-        ).then(([rows]) => {
-            if (rows.length > 0) {
-                return rows[0].PlayerID;
-            }
-            throw new Error('Opponent not found');
-        });
-        console.log(res)
-        return res
+        );
+        
+        if (rows.length > 0) {
+            return rows[0].PlayerID;
+        }
+        // Throwing an error is safer than returning undefined
+        throw new Error('Opponent not found for GameID: ' + gameID);
     }
 
     // 4. Make a Move
@@ -269,7 +319,8 @@ io.on('connection', (socket) => {
         try {
             // Call the `sp_MakeMove` procedure
             // We assume this SP returns the result and checks for win state
-            const [[result]] = await dbPool.query('CALL sp_MakeMove(?, ?, ?, ?)', [gameID, authenticatedPlayerID, x, y]);
+            let [[result]] = await dbPool.query('CALL sp_MakeMove(?, ?, ?, ?)', [gameID, authenticatedPlayerID, x, y]);
+            result=result[0]; // Adjust for nested result set from CALL
             console.log("move result:",result);
             // `result` might be: { Result: 'Hit', DefendingPlayerID: 12, GameState: 'InProgress' }
             // or { Result: 'Win', DefendingPlayerID: 12, GameState: 'Completed' }

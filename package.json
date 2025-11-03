@@ -6,7 +6,9 @@
   "scripts": {
     "test": "jest",
     "build": "webpack",
-    "watch": "webpack --watch"
+    "watch": "webpack --watch",
+    "setup": "npm install && cd server && npm install",
+    "start": "node server/server.js"
   },
   "author": "",
   "license": "ISC",
